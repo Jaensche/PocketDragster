@@ -5,7 +5,7 @@
       "type": "emulicious-debugger",
       "request": "launch",
       "name": "Debug in Emulicious",
-      "program": "${workspaceFolder}/build/quartermile.gb",
+      "program": "${workspaceFolder}/build/pocketdragster.gb",
       "port": 58870,
       "stopOnEntry": false,
       "preLaunchTask": "build"

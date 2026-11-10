@@ -2,3 +2,4 @@ build/
 *.sav
 gbdk/
 Emulicious/
+__pycache__/
