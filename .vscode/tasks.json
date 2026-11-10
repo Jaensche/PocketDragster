@@ -1,0 +1,24 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "type": "shell",
+      "command": "make",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": {
+        "owner": "sdcc",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "pattern": {
+          "regexp": "^(.*):(\\d+):\\s+(warning|error)\\s*\\d*:\\s+(.*)$",
+          "file": 1, "line": 2, "severity": 3, "message": 4
+        }
+      }
+    },
+    {
+      "label": "clean",
+      "type": "shell",
+      "command": "make clean"
+    }
+  ]
+}
