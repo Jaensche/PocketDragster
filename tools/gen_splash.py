@@ -24,7 +24,7 @@ FLAG_X, FLAG_Y, FLAG_W, FLAG_H = 1, 6, 9, 9      # tiles
 FLAG_FRAMES = 8
 DRAGSTER_X, DRAGSTER_Y = 11, 7                   # 8x3 tiles
 CREDIT = (12, 11, "BY J.E.")
-PRESS = (5, 16, "PRESS START")
+PRESS = (4, 16, "PRESS A OR B")
 TITLE = [(4, 1, "POCKET"), (2, 3, "DRAGSTER")]   # 2x2-tile letters
 
 

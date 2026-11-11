@@ -5,18 +5,19 @@
 #include <stdint.h>
 
 #define T_FONT         0u
-#define T_SEG          59u
-#define T_CARS         83u
-#define T_TRACK        91u
-#define T_MINI_TREE    92u
-#define T_FINISH       94u
-#define BG_TILE_COUNT  215u
+#define T_SEG          65u
+#define BG_TILE_COUNT  240u
 
 #define S_CARS         0u
-#define S_SMOKE        8u
-#define S_NEEDLE       10u
-#define S_DIGITS       18u
-#define SPR_TILE_COUNT 28u
+#define S_SMOKE        32u
+#define S_PUFF         34u
+#define S_MINI_TREE    35u
+#define S_NEEDLE       37u
+#define S_DIGITS       45u
+#define S_SEG          55u
+#define S_TIME_DOT     79u
+#define S_TIME_S       80u
+#define SPR_TILE_COUNT 81u
 #define NEEDLE_DIRS    8u
 
 #define GAUGE_TILES    7u
@@ -37,9 +38,19 @@ extern const uint8_t map_tach0[];
 extern const uint8_t map_tach1[];
 extern const uint8_t map_tach2[];
 extern const uint8_t tree_map[];
+extern const uint8_t crowd_map[];
+extern const uint8_t road_map[];
 extern const uint8_t map_speedo[];
 extern const int8_t needle_table[(ANG_SWEEP + 1) * 7];
 #define TREE_ROWS      15u
+#define WORLD_START_WX 40u
+#define START_LINE_WX  52u
+#define WORLD_FIN_WX   1030u
+#define CAM_NOSE_X     72u
+#define CAM_MAX        910u
+#define ROAD_COLS      146u
+#define ROAD_ROWS      4u
+#define CROWD_COLS     4u
 extern const int8_t tree_row_up[TREE_ROWS];
 extern const int8_t tree_row_lo[TREE_ROWS];
 #define ENGINE_PERIODS 161u

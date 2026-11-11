@@ -111,8 +111,8 @@ typedef struct {
 
 static const crank_t cranks[4] = {
     { 54, 8,  737u, 0xA2, 0x62 },   // STOCK: slow starter, ~100 Hz, soft catch
-    { 42, 6,  956u, 0xC2, 0x52 },   // MODIFIED: quicker, ~120 Hz
-    { 33, 4, 1393u, 0xF3, 0x41 },   // FUNNY CAR: external starter whine, nitro bang
+    { 42, 6,  956u, 0xC2, 0x52 },   // PRO MOD: quicker, ~120 Hz
+    { 33, 4, 1393u, 0xF3, 0x41 },   // FUNNY (car): external starter whine, nitro bang
     { 33, 4, 1452u, 0xF4, 0x40 },   // TOP FUEL: even bigger bang
 };
 

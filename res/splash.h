@@ -12,9 +12,9 @@
 #define SPLASH_FLAG_W        9u
 #define SPLASH_FLAG_H        9u
 #define SPLASH_FLAG_FRAMES   8u
-#define SPLASH_PRESS_X       5u
+#define SPLASH_PRESS_X       4u
 #define SPLASH_PRESS_Y       16u
-#define SPLASH_PRESS_LEN     11u
+#define SPLASH_PRESS_LEN     12u
 
 extern const uint8_t splash_tiles[];
 extern const uint8_t splash_map[];

@@ -11,7 +11,7 @@ static const uint8_t blank_row[SPLASH_PRESS_LEN];   // zeros = blank tile
 
 void title_run(void) {
     uint8_t i, k = 0, buf = 0, t = 0, step = 0;
-    uint8_t keys, prev = 0xFFu;   // a START held at power-on doesn't skip the splash
+    uint8_t keys, prev = 0xFFu;   // a button held at power-on doesn't skip the splash
 
     DISPLAY_OFF;
     HIDE_SPRITES;
@@ -31,7 +31,7 @@ void title_run(void) {
     while (1) {
         vsync();
         keys = joypad();
-        if ((keys & J_START) && !(prev & J_START)) break;
+        if ((keys & (J_START | J_A | J_B)) & (uint8_t)~prev) break;
         prev = keys;
         t++;
 
@@ -50,6 +50,6 @@ void title_run(void) {
             set_bkg_tiles(SPLASH_FLAG_X, SPLASH_FLAG_Y, SPLASH_FLAG_W, SPLASH_FLAG_H, flag_map[buf]);
         }
     }
-    // Wait for START to be released so the game doesn't see it as a press.
-    while (joypad() & J_START) vsync();
+    // Wait for all buttons to be released so the game doesn't see the press.
+    while (joypad()) vsync();
 }

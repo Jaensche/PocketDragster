@@ -1,9 +1,10 @@
 // Pocket Dragster - a drag racer for the original Game Boy.
 //
-// Flow:     class select (engine off) -> START -> A starts the engine ->
+// Flow:     class select (engine off) -> A/B -> A starts the engine ->
 //           countdown -> race.
 // Controls: A = gas, UP / DOWN = clutch in + shift up / down (hold = clutch in),
-//           START = stage / retry, SELECT = class (when idle).
+//           A/B = race, B = back (engine start, foul, blown), LEFT/RIGHT (or SELECT) = class,
+//           START = abort race.
 
 #include <gb/gb.h>
 #include <gb/hardware.h>
@@ -17,8 +18,11 @@ enum { ST_IDLE, ST_STAGE, ST_RACE, ST_FINISH, ST_FOUL, ST_BLOWN,
        ST_CRANK };    // starter running
 
 #define AMBER_FRAMES   30u   // 0.5 s per amber lamp
-#define MIN_WAIT       40u   // frames before START is accepted after a run
+#define MIN_WAIT       40u   // frames before a retry press is accepted after a run
 #define SHIFT_KEYS     (J_UP | J_DOWN)
+#define RACE_KEYS      (J_A | J_B | J_START)   // start a race
+#define LEAVE_KEYS     (J_A | J_B | J_START)   // leave a result / foul / blown screen
+#define DRIVE_HINT     ICON_A " GAS  " ICON_UP " " ICON_DOWN " SHIFT"
 
 static car_t car;
 static uint8_t state, cls, keys, prev, pressed, released, frame;
@@ -33,9 +37,10 @@ static uint16_t rt_frames;    // reaction time: green -> clutch out
 static uint8_t launched;
 static uint8_t lamps;
 static uint8_t shake;
+static uint8_t shift_shown;   // message line shows the shift warning
 
 // Best time per class this session (not saved), hundredths, 0 = none.
-// Only used for the "NEW BEST!" message.
+// Shown next to the class name; a beaten record also gets "NEW BEST!".
 static uint16_t best_et[NUM_CLASSES];
 
 static uint16_t frames_to_hundredths(uint16_t f) {
@@ -57,9 +62,10 @@ static void enter_idle(void) {
     set_lamps(0);
     shake = 0;
     display_shake(0);
-    display_class(cls);
+    display_class(cls, best_et[cls]);
     display_time(0);
-    display_msg("START: STAGE", "SELECT: CLASS");
+    display_race_mode(0);
+    display_msg(ICON_LEFT " " ICON_RIGHT " CLASS  " ICON_A " START");
 }
 
 static void enter_ignition(void) {
@@ -68,13 +74,13 @@ static void enter_ignition(void) {
     car_reset(&car, cls);
     car.engine_off = 1;
     display_time(0);
-    display_msg("PRESS A TO START", "THE ENGINE");
+    display_msg(ICON_A " ENGINE  " ICON_B " BACK");
 }
 
 static void enter_crank(void) {
     state = ST_CRANK;
     timer = 0;
-    display_msg("STARTING...", 0);
+    display_msg("STARTING...");
 }
 
 // Engine is running: the countdown begins.
@@ -87,15 +93,17 @@ static void enter_stage(void) {
     car.engine_off = 0;
     car.rpm = catch_rpm[cls];   // settles to idle on its own
     if (keys & J_UP) car_shift_press(&car);   // UP already held: clutch in, 1st
-    display_msg("HOLD UP = 1ST GEAR", "REV A, RELEASE UP");
+    display_race_mode(1);
+    display_msg("HOLD " ICON_UP " = 1ST GEAR");
 }
 
 static void enter_foul(void) {
     state = ST_FOUL;
     timer = 0;
+    car.gas = 0;    // throttle closed: A no longer drives on this screen
     set_lamps(LAMP_RED);
     sound_beep(0);
-    display_msg("FOUL! RED LIGHT", "START: RETRY");
+    display_msg("FOUL!  " ICON_B " BACK");
 }
 
 static void enter_blown(void) {
@@ -103,11 +111,11 @@ static void enter_blown(void) {
     timer = 0;
     shake = 16;
     sound_boom();
-    display_msg("ENGINE BLOWN!", "START: RETRY");
+    display_msg("BLOWN!  " ICON_B " BACK");
 }
 
 static void enter_finish(void) {
-    char l1[21], l2[21], buf[6];
+    char line[21], buf[6];
     uint16_t et = frames_to_hundredths(race_frames);
     uint16_t kmh = KMH(car.speed);
     finish_kmh = kmh;
@@ -128,29 +136,22 @@ static void enter_finish(void) {
         best = 1;
     }
 
-    // "ET 14.45  159 KM/H"
-    fmt_time(buf, et);
-    l1[0] = 'E'; l1[1] = 'T'; l1[2] = ' ';
-    l1[3] = buf[0]; l1[4] = buf[1]; l1[5] = buf[2]; l1[6] = buf[3]; l1[7] = buf[4];
-    l1[8] = ' '; l1[9] = ' ';
-    fmt_uint(l1 + 10, kmh, 3);
-    l1[13] = ' '; l1[14] = 'K'; l1[15] = 'M'; l1[16] = '/'; l1[17] = 'H'; l1[18] = 0;
-
-    // "RT 0.42  NEW BEST!"
+    // One line: "RT 0.42  NEW BEST!". The time stays on the big timer and the
+    // trap speed on the speedometer.
     fmt_time(buf, frames_to_hundredths(rt_frames));
-    l2[0] = 'R'; l2[1] = 'T'; l2[2] = ' ';
-    l2[3] = buf[1]; l2[4] = buf[2]; l2[5] = buf[3]; l2[6] = buf[4];
+    line[0] = 'R'; line[1] = 'T'; line[2] = ' ';
+    line[3] = buf[1]; line[4] = buf[2]; line[5] = buf[3]; line[6] = buf[4];
     if (best) {
-        const char *s = "  NEW BEST!";
+        const char *t = "  NEW BEST!";
         uint8_t i = 7;
-        while (*s) l2[i++] = *s++;
-        l2[i] = 0;
+        while (*t) line[i++] = *t++;
+        line[i] = 0;
     } else {
-        l2[7] = 0;
+        line[7] = 0;
     }
-    display_msg(l1, l2);
+    display_msg(line);
     display_time(et);   // exact value; the live counter is an approximation
-    display_class(cls);
+    display_class(cls, best_et[cls]);
 }
 
 static void update_tree(void) {
@@ -163,7 +164,8 @@ static void update_tree(void) {
         // Green!
         set_lamps(LAMP_GREEN);
         sound_beep(1);
-        display_msg("GO!", "UP/DOWN = SHIFT");
+        display_msg(DRIVE_HINT);
+        shift_shown = 0;
         state = ST_RACE;
         race_frames = 0;
         race_hund = 0;
@@ -204,9 +206,15 @@ static void render(void) {
     if (state == ST_FINISH) display_gauges(finish_rpm, finish_kmh);
     else display_gauges(car.rpm, KMH(car.speed));
     display_gear(car.gear);
-    display_shift_light(!car.blown &&
-        (state == ST_FINISH ? finish_rpm : car.rpm) >= c->redline - (c->redline >> 4));
-    display_car(car.dist, car.wheelspin, frame);
+    // Near the red line the drive hint turns into a shift warning.
+    if (state == ST_RACE) {
+        uint8_t shift = !car.blown && car.rpm >= c->redline - (c->redline >> 4);
+        if (shift != shift_shown) {
+            shift_shown = shift;
+            display_msg(shift ? ICON_UP ICON_UP " SHIFT! " ICON_UP ICON_UP : DRIVE_HINT);
+        }
+    }
+    display_car(car.dist, car.wheelspin, car.blown, frame);
     if (state == ST_RACE) display_time(race_hund);
     if (shake) {
         display_shake((frame & 2u) ? (int8_t)(shake >> 2) : -(int8_t)(shake >> 2));
@@ -237,23 +245,29 @@ void main(void) {
 
         switch (state) {
         case ST_IDLE:
-            if (pressed & J_SELECT) {
+            // START/SELECT are awkward on the GB: race on A/B, class on LEFT/RIGHT.
+            if (pressed & (J_RIGHT | J_SELECT)) {
                 cls = (uint8_t)((cls + 1u) & 3u);
                 enter_idle();
-            } else if (pressed & J_START) {
+            } else if (pressed & J_LEFT) {
+                cls = (uint8_t)((cls - 1u) & 3u);
+                enter_idle();
+            } else if (pressed & RACE_KEYS) {
                 enter_ignition();
             }
             break;
         case ST_IGNITION:
             if (pressed & J_A) enter_crank();
-            else if (pressed & J_START) enter_idle();
+            else if (pressed & (J_B | J_START)) enter_idle();
             break;
         case ST_CRANK:
             if (sound_crank(cls, (uint8_t)(timer - 1u))) enter_stage();
             break;
         case ST_STAGE:
+            // Tree first: a release on the very frame the green comes on is a
+            // valid start, not a foul.
+            update_tree();
             handle_drive_input();
-            if (state == ST_STAGE) update_tree();
             break;
         case ST_RACE:
             race_frames++;
@@ -264,9 +278,9 @@ void main(void) {
             handle_drive_input();
             if (pressed & J_START) enter_idle();
             break;
-        default:   // FINISH, FOUL, BLOWN
-            if (state == ST_FOUL) car.gas = (keys & J_A) ? 1u : 0u;
-            if ((pressed & J_START) && timer > MIN_WAIT) enter_idle();
+        default:   // FINISH, FOUL, BLOWN: the car no longer takes input
+            car.gas = 0;
+            if ((pressed & LEAVE_KEYS) && timer > MIN_WAIT) enter_idle();
             break;
         }
 
