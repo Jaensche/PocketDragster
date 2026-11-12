@@ -1,6 +1,6 @@
 # Pocket Dragster
 
-A drag-racing game for the original Game Boy (DMG), built with GBDK-2020 4.5.0.
+A drag-racing game for the original Game Boy (DMG), built with GBDK-2020 4.5.0. Code entirely written by Claude Code.
 
 ## Build
 
