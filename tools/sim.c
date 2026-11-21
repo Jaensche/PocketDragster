@@ -2,12 +2,18 @@
 // Build & run: make sim
 // For each class, grid-searches launch rpm and shift rpm with a simple
 // driver (lift + tap clutch for SHIFT_FRAMES) and reports the best ET/trap.
+// Exits 1 if a best ET moves away from EXPECT_ET: a regression check, so a
+// physics change that overflows or retunes a class does not go unnoticed.
+// After an intended retune, update EXPECT_ET to the new values.
 
 #include <stdio.h>
 #include "../src/physics.h"
 
 #define FPS 59.7275
 #define MAX_FRAMES (60 * 40)
+#define ET_TOLERANCE 0.05
+
+static const double EXPECT_ET[NUM_CLASSES] = { 14.43, 11.28, 6.71, 6.09 };
 
 typedef struct { int ok; double et, mph; int frames60, spin_frames; } result_t;
 
@@ -55,6 +61,7 @@ static result_t run(uint8_t cls, uint16_t launch_rpm, uint16_t shift_rpm,
 
 int main(void) {
     uint8_t cls;
+    int failed = 0;
     for (cls = 0; cls < NUM_CLASSES; cls++) {
         const car_class_t *c = &car_classes[cls];
         result_t best = {0};
@@ -66,6 +73,10 @@ int main(void) {
             }
         printf("%-10s redline %5u | best ET %6.2f s @ %5.1f mph | launch %5u shift %5u | 0-60 %.2f s | spin %d fr\n",
                c->name, c->redline, best.et, best.mph, bl, bs, best.frames60 / FPS, best.spin_frames);
+        if (!best.ok || best.et < EXPECT_ET[cls] - ET_TOLERANCE || best.et > EXPECT_ET[cls] + ET_TOLERANCE) {
+            printf("%10s FAIL: expected best ET %.2f s\n", "", EXPECT_ET[cls]);
+            failed = 1;
+        }
         {   // sensitivity: sloppy driving
             result_t a = run(cls, 2000, bs, 4, 0);
             result_t b = run(cls, bl, (uint16_t)(c->redline * 3 / 4), 4, 0);
@@ -74,5 +85,5 @@ int main(void) {
                    a.ok ? a.et : 0, b.ok ? b.et : 0, d.ok ? "" : "BLOWN ", d.ok ? d.et : 0);
         }
     }
-    return 0;
+    return failed;
 }

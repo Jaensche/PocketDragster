@@ -83,7 +83,6 @@ static uint8_t race_mode;
 static volatile uint8_t scx_crowd, scx_road;
 static uint16_t cam;          // world x at the screen's left edge
 static uint16_t road_last;    // highest world column streamed into the map
-static uint8_t isr_added;
 
 
 // Background writes left of the tree go to the BG map, from col 17 on to the
@@ -110,16 +109,6 @@ void display_text(uint8_t x, uint8_t y, const char *s) {
 static void clear_row(uint8_t y, uint8_t x0, uint8_t x1) {
     uint8_t x;
     for (x = x0; x <= x1; x++) put(x, y, T_FONT);  // T_FONT + 0 = space
-}
-
-void fmt_uint(char *buf, uint16_t v, uint8_t width) {
-    uint8_t i = width;
-    buf[width] = 0;
-    do {
-        buf[--i] = (char)('0' + v % 10u);
-        v /= 10u;
-    } while (v && i);
-    while (i) buf[--i] = ' ';
 }
 
 void fmt_time(char *buf, uint16_t h) {
@@ -415,11 +404,6 @@ void display_init(void) {
     DISPLAY_OFF;
     BGP_REG = 0xE4;
     OBP0_REG = 0xE4;
-    // Forget what was drawn: we may come back from the title screen.
-    last_kmh = 0xFFFFu;
-    last_gear = lamps_drawn = 0xFFu;
-    last_time = 0xFFFFu;
-    for (x = 0; x < 4u; x++) time_drawn[x] = 0xFFu;
     set_bkg_data(0, BG_TILE_COUNT, bg_tiles);
     set_sprite_data(0, SPR_TILE_COUNT, spr_tiles);
     fill_bkg_rect(0, 0, 32, 32, T_FONT);  // spaces
@@ -448,7 +432,7 @@ void display_init(void) {
     CRITICAL {
         STAT_REG = STATF_LYC;
         LYC_REG = CROWD_LY;
-        if (!isr_added) { add_LCD(lcd_isr); isr_added = 1; }
+        add_LCD(lcd_isr);
     }
     set_interrupts(VBL_IFLAG | LCD_IFLAG);
 

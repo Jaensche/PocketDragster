@@ -27,13 +27,12 @@ enum { ST_IDLE, ST_STAGE, ST_RACE, ST_FINISH, ST_FOUL, ST_BLOWN,
 static car_t car;
 static uint8_t state, cls, keys, prev, pressed, released, frame;
 static uint16_t timer;        // frames since entering the state
-static uint16_t race_frames;  // frames since green
-static uint16_t race_hund;    // hundredths since green (for the live display)
+static uint16_t race_hund;    // hundredths since green, stops at 99.99
 static uint16_t finish_kmh;   // trap speed, held on the speedometer after the finish
 static uint16_t finish_rpm;   // rpm at the line, held on the tach after the finish
 static uint16_t hund_frac;    // fractional hundredths, 1/65536 units
 static uint16_t stage_delay;  // random wait before first amber
-static uint16_t rt_frames;    // reaction time: green -> clutch out
+static uint16_t rt_hund;      // reaction time: green -> clutch out, hundredths
 static uint8_t launched;
 static uint8_t lamps;
 static uint8_t shake;
@@ -42,10 +41,6 @@ static uint8_t shift_shown;   // message line shows the shift warning
 // Best time per class this session (not saved), hundredths, 0 = none.
 // Shown next to the class name; a beaten record also gets "NEW BEST!".
 static uint16_t best_et[NUM_CLASSES];
-
-static uint16_t frames_to_hundredths(uint16_t f) {
-    return (uint16_t)(((uint32_t)f * 6857u) >> 12);   // 100 / 59.7275
-}
 
 static void set_lamps(uint8_t mask) {
     if (mask != lamps) { lamps = mask; display_lamps(mask); }
@@ -87,7 +82,7 @@ static void enter_crank(void) {
 static void enter_stage(void) {
     state = ST_STAGE;
     timer = 0;
-    race_frames = 0;
+    race_hund = 0;
     launched = 0;
     stage_delay = 40u + (DIV_REG & 63u);
     car.engine_off = 0;
@@ -116,7 +111,8 @@ static void enter_blown(void) {
 
 static void enter_finish(void) {
     char line[21], buf[6];
-    uint16_t et = frames_to_hundredths(race_frames);
+    uint16_t et = race_hund;
+    uint16_t rt = rt_hund > 999u ? 999u : rt_hund;   // "RT" shows x.xx only
     uint16_t kmh = KMH(car.speed);
     finish_kmh = kmh;
     finish_rpm = car.rpm;
@@ -138,7 +134,7 @@ static void enter_finish(void) {
 
     // One line: "RT 0.42  NEW BEST!". The time stays on the big timer and the
     // trap speed on the speedometer.
-    fmt_time(buf, frames_to_hundredths(rt_frames));
+    fmt_time(buf, rt);
     line[0] = 'R'; line[1] = 'T'; line[2] = ' ';
     line[3] = buf[1]; line[4] = buf[2]; line[5] = buf[3]; line[6] = buf[4];
     if (best) {
@@ -150,7 +146,7 @@ static void enter_finish(void) {
         line[7] = 0;
     }
     display_msg(line);
-    display_time(et);   // exact value; the live counter is an approximation
+    display_time(et);
     display_class(cls, best_et[cls]);
 }
 
@@ -167,7 +163,6 @@ static void update_tree(void) {
         display_msg(DRIVE_HINT);
         shift_shown = 0;
         state = ST_RACE;
-        race_frames = 0;
         race_hund = 0;
         hund_frac = 0;
         return;
@@ -195,7 +190,7 @@ static void handle_drive_input(void) {
         car_shift_release(&car);
         if (!launched && car.gear) {
             launched = 1;
-            rt_frames = race_frames;
+            rt_hund = race_hund;
         }
     }
 }
@@ -228,8 +223,6 @@ void main(void) {
     title_run();
     display_init();
     sound_init();
-    for (cls = 0; cls < NUM_CLASSES; cls++) { best_et[cls] = 0; }
-    cls = 0;
     enter_idle();
 
     while (1) {
@@ -247,10 +240,10 @@ void main(void) {
         case ST_IDLE:
             // START/SELECT are awkward on the GB: race on A/B, class on LEFT/RIGHT.
             if (pressed & (J_RIGHT | J_SELECT)) {
-                cls = (uint8_t)((cls + 1u) & 3u);
+                cls = (uint8_t)((cls + 1u) % NUM_CLASSES);
                 enter_idle();
             } else if (pressed & J_LEFT) {
-                cls = (uint8_t)((cls - 1u) & 3u);
+                cls = (uint8_t)((cls + NUM_CLASSES - 1u) % NUM_CLASSES);
                 enter_idle();
             } else if (pressed & RACE_KEYS) {
                 enter_ignition();
@@ -270,11 +263,13 @@ void main(void) {
             handle_drive_input();
             break;
         case ST_RACE:
-            race_frames++;
-            // +1.674271 hundredths per frame (100 / 59.7275), without multiplying
-            race_hund++;
-            hund_frac += 44189u;
-            if (hund_frac < 44189u) race_hund++;
+            // +1.674271 hundredths per frame (100 / 59.7275), without multiplying.
+            // Stops at 99.99 so the counter never wraps into a fake best time.
+            if (race_hund < 9999u) {
+                race_hund++;
+                hund_frac += 44189u;
+                if (hund_frac < 44189u) race_hund++;
+            }
             handle_drive_input();
             if (pressed & J_START) enter_idle();
             break;

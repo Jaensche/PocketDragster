@@ -1,6 +1,7 @@
 #include <gb/gb.h>
 #include <gb/hardware.h>
 #include "sound.h"
+#include "physics.h"
 #include "tiles.h"
 
 static uint8_t engine_on;
@@ -109,7 +110,7 @@ typedef struct {
     uint8_t  catch_nr43;
 } crank_t;
 
-static const crank_t cranks[4] = {
+static const crank_t cranks[NUM_CLASSES] = {
     { 54, 8,  737u, 0xA2, 0x62 },   // STOCK: slow starter, ~100 Hz, soft catch
     { 42, 6,  956u, 0xC2, 0x52 },   // PRO MOD: quicker, ~120 Hz
     { 33, 4, 1393u, 0xF3, 0x41 },   // FUNNY (car): external starter whine, nitro bang
@@ -117,12 +118,12 @@ static const crank_t cranks[4] = {
 };
 
 uint8_t sound_crank_phase(uint8_t cls, uint8_t t) {
-    const crank_t *c = &cranks[cls & 3u];
+    const crank_t *c = &cranks[cls];
     return (uint8_t)((t % c->period) < (c->period >> 1));
 }
 
 uint8_t sound_crank(uint8_t cls, uint8_t t) {
-    const crank_t *c = &cranks[cls & 3u];
+    const crank_t *c = &cranks[cls];
     uint16_t x;
     if (t >= c->frames) {
         // Catch: silence the starter, fire a noise burst. The engine tone is

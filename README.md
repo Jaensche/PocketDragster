@@ -10,6 +10,8 @@ make clean
 make run        # opens the ROM in Emulicious (expects Emulicious/Emulicious.jar, which is not tracked; override with EMULICIOUS=...)
 ```
 
+`make` may run the generators in `tools/` (plain `python3`, no extra packages) when a fresh checkout leaves them newer than `res/`; the output is the same as the committed files.
+
 Cartridge header: MBC5 without RAM or battery (type 0x19), 32 KB ROM. 
 
 ## Layout

@@ -48,10 +48,10 @@ $(OBJDIR):
 	mkdir -p $@
 
 # Generated tile data (committed, so Python is only needed when editing art)
-$(RESDIR)/tiles.c $(RESDIR)/tiles.h: tools/gen_tiles.py
+$(RESDIR)/tiles.c $(RESDIR)/tiles.h &: tools/gen_tiles.py
 	python3 tools/gen_tiles.py
 
-$(RESDIR)/splash.c $(RESDIR)/splash.h: tools/gen_splash.py tools/gen_tiles.py
+$(RESDIR)/splash.c $(RESDIR)/splash.h &: tools/gen_splash.py tools/gen_tiles.py
 	python3 tools/gen_splash.py
 
 run: $(ROM)

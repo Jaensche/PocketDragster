@@ -8,7 +8,6 @@
 #define NUM_CLASSES   4
 #define NUM_GEARS     4
 #define IDLE_RPM      1000u
-#define TACH_MAX_RPM  10000u
 
 // Distance unit: 1/65536 ft. Quarter mile = 1320 ft.
 #define QUARTER_MILE  ((uint32_t)1320u << 16)
