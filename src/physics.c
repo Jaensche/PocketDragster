@@ -1,12 +1,13 @@
 #include "physics.h"
 
 // Tuned with tools/sim.c (make sim). Red lines follow the 1980 class layout.
+#define INV(r) ((uint16_t)(64UL * 65536UL / (r)))   // inv_redline, folded at compile time
 const car_class_t car_classes[NUM_CLASSES] = {
     //  name         redline inv   gear_k (N,1,2,3,4)      pow drag trac  up  dn slip
-    { "STOCK",       6999u, 599u, { 0, 170, 115, 84, 64 },   88, 11,   55, 110,  90,  60 },
-    { "PRO MOD",     8999u, 466u, { 0, 165, 115, 86, 66 },  140, 12,   85, 140, 100,  80 },
-    { "FUNNY",       9999u, 419u, { 0, 110,  78, 56, 42 },  600, 13,  235, 220, 120, 120 },
-    { "TOP FUEL",    8999u, 466u, { 0,  95,  66, 48, 35 },  900, 13,  285, 240, 130, 130 },
+    { "STOCK",       6999u, INV(6999u), { 0, 170, 115, 84, 64 },   88, 11,   55, 110,  90,  60 },
+    { "PRO MOD",     8999u, INV(8999u), { 0, 165, 115, 86, 66 },  140, 12,   85, 140, 100,  80 },
+    { "FUNNY",       9999u, INV(9999u), { 0, 110,  78, 56, 42 },  600, 13,  235, 220, 120, 120 },
+    { "TOP FUEL",    8999u, INV(8999u), { 0,  95,  66, 48, 35 },  900, 13,  285, 240, 130, 130 },
 };
 
 // Normalized torque (0..255) vs rpm/redline, 17 points at 1/16 steps.

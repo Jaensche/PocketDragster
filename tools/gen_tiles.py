@@ -739,18 +739,16 @@ def write_c(bg, defs, maps, spr, sdefs):
         f.write(f"#define TACH_MAX       {TACH_MAX}u\n#define SPEEDO_MAX     {SPEEDO_MAX}u\n")
         f.write("// Needle angle in binary degrees (256 = 360), screen maths convention.\n")
         assert int(ANG_START * 256 / 360) == ANG_START_B and int(ANG_SWEEP * 256 / 360) == ANG_SWEEP_B
-        f.write(f"#define ANG_START      {ANG_START_B}\n")
         f.write(f"#define ANG_SWEEP      {ANG_SWEEP_B}\n\n")
         f.write("// Font: tile = T_FONT + (ch - ' ') for ' '..'Z'.\n")
         f.write("// 7-seg: symbol order \"0123456789 -\", 2 tiles each (top, bottom).\n")
-        f.write("#define SEG_BLANK 10u\n#define SEG_DASH  11u\n\n")
+        f.write("#define SEG_BLANK 10u\n\n")
         f.write("extern const uint8_t bg_tiles[];\nextern const uint8_t spr_tiles[];\n")
         for name, _ in maps:
             f.write(f"extern const uint8_t {name}[];\n")
         f.write("extern const int8_t needle_table[(ANG_SWEEP + 1) * 7];\n")
         f.write(f"#define TREE_ROWS      {TREE_ROWS}u\n")
         for n, v in (("WORLD_START_WX", WORLD_START_WX), ("START_LINE_WX", START_LINE_WX),
-                     ("WORLD_FIN_WX", WORLD_FIN_WX),
                      ("CAM_NOSE_X", CAM_NOSE_X), ("CAM_MAX", CAM_MAX), ("ROAD_COLS", ROAD_COLS),
                      ("ROAD_ROWS", ROAD_ROWS), ("CROWD_COLS", CROWD_PERIOD // 8)):
             f.write(f"#define {n:<14} {v}u\n")

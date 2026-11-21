@@ -24,13 +24,11 @@
 #define TACH_MAX       10000u
 #define SPEEDO_MAX     400u
 // Needle angle in binary degrees (256 = 360), screen maths convention.
-#define ANG_START      160
 #define ANG_SWEEP      192
 
 // Font: tile = T_FONT + (ch - ' ') for ' '..'Z'.
 // 7-seg: symbol order "0123456789 -", 2 tiles each (top, bottom).
 #define SEG_BLANK 10u
-#define SEG_DASH  11u
 
 extern const uint8_t bg_tiles[];
 extern const uint8_t spr_tiles[];
@@ -45,7 +43,6 @@ extern const int8_t needle_table[(ANG_SWEEP + 1) * 7];
 #define TREE_ROWS      15u
 #define WORLD_START_WX 40u
 #define START_LINE_WX  52u
-#define WORLD_FIN_WX   1030u
 #define CAM_NOSE_X     72u
 #define CAM_MAX        910u
 #define ROAD_COLS      146u

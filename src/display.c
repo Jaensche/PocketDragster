@@ -200,7 +200,7 @@ void display_gauges(uint16_t rpm, uint16_t kmh) {
     sw = (uint16_t)((kmh * 123u) >> 8);
     place_needle(SPR_SPEEDO, SPEEDO_OAM_X, sw > ANG_SWEEP ? ANG_SWEEP : (uint8_t)sw);
     // Refresh the number at 15 Hz: steadier to read than every frame.
-    if (kmh != last_kmh && (++kmh_tick & 3u) == 0) {
+    if ((++kmh_tick & 3u) == 0 && kmh != last_kmh) {
         uint8_t d[3], n, i, x;
         last_kmh = kmh;
         // digits by subtraction (no division)
